@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý Đề tài</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <style>
+        body { background: #f8f9fa; }
+        .header { background: #0d6efd; color: white; padding: 15px; text-align: center; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h3>QUẢN LÝ ĐỀ TÀI</h3>
+    <a href="index.html" class="btn btn-light btn-sm">← Về trang chủ</a>
+</div>
+
+<div class="container my-5">
+    <div class="mb-3 text-end">
+        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalDetai">
+            <i class="bi bi-plus-lg"></i> Thêm đề tài
+        </button>
+    </div>
+
+    <table class="table table-bordered table-hover">
+        <thead class="table-primary">
+            <tr>
+                <th>Mã</th>
+                <th>Tên đề tài</th>
+                <th>Lĩnh vực</th>
+                <th>GVHD</th>
+                <th>Số SV tối đa</th>
+                <th>Trạng thái</th>
+                <th>Thao tác</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr data-id="1">
+                <td>DA2026-001</td>
+                <td>Xây dựng website quản lý đồ án SV</td>
+                <td>Công nghệ phần mềm</td>
+                <td>Nguyễn Thị Lan</td>
+                <td>2</td>
+                <td><span class="badge bg-success">Mở</span></td>
+                <td>
+                    <button class="btn btn-sm btn-warning btn-sua" data-bs-toggle="modal" data-bs-target="#modalDetai"><i class="bi bi-pencil"></i></button>
+                    <button class="btn btn-sm btn-danger btn-xoa"><i class="bi bi-trash"></i></button>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal Thêm/Sửa đề tài -->
+<div class="modal fade" id="modalDetai" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Thêm / Sửa đề tài</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formDetai">
+                    <input type="hidden" id="id">
+                    <div class="mb-3">
+                        <label>Mã đề tài</label>
+                        <input type="text" class="form-control" id="ma_de_tai" required>
+                    </div>
+                    <div class="mb-3">
+                        <label>Tên đề tài</label>
+                        <input type="text" class="form-control" id="ten_de_tai" required>
+                    </div>
+                    <div class="mb-3">
+                        <label>Lĩnh vực</label>
+                        <select class="form-select" id="linh_vuc">
+                            <option value="1">Công nghệ phần mềm</option>
+                            <option value="2">Trí tuệ nhân tạo</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label>GV hướng dẫn</label>
+                        <select class="form-select" id="giang_vien">
+                            <option value="2">Nguyễn Thị Lan</option>
+                            <option value="3">Trần Văn Hùng</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label>Số SV tối đa</label>
+                        <input type="number" class="form-control" id="so_luong_sv_max" min="1" value="1">
+                    </div>
+                    <div class="mb-3">
+                        <label>Trạng thái</label>
+                        <select class="form-select" id="trang_thai">
+                            <option value="mo">Mở</option>
+                            <option value="dong">Đóng</option>
+                            <option value="da_hoan_thanh">Hoàn thành</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-primary" id="btnLuu">Lưu</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+        $('.btn-sua').click(function () {
+            let row = $(this).closest('tr');
+            $('#id').val(row.data('id'));
+            $('#ma_de_tai').val(row.find('td:eq(0)').text());
+            $('#ten_de_tai').val(row.find('td:eq(1)').text());
+            $('.modal-title').text('Sửa đề tài');
+        });
+
+        $('.btn-xoa').click(function () {
+            if (confirm('Xóa đề tài?')) {
+                $(this).closest('tr').remove();
+                alert('Đã xóa (demo)');
+            }
+        });
+
+        $('#btnLuu').click(function () {
+            alert('Đã lưu đề tài (demo frontend)');
+            $('#modalDetai').modal('hide');
+        });
+
+        $('#modalDetai').on('show.bs.modal', function (e) {
+            if (!$(e.relatedTarget).hasClass('btn-sua')) {
+                $('#formDetai')[0].reset();
+                $('.modal-title').text('Thêm đề tài mới');
+            }
+        });
+    });
+</script>
+
+</body>
+</html>
