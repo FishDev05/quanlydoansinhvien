@@ -5,34 +5,46 @@ require_once 'db.php';
 $method = $_SERVER['REQUEST_METHOD'];
 
 switch ($method) {
-    case 'GET': // Lấy tất cả người dùng
+    case 'GET': // Lấy danh sách
         $stmt = $pdo->query("SELECT id, ma_so, ho_ten, email, vai_tro, khoa FROM nguoi_dung");
         $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        echo json_encode($users);
+        response($users);
         break;
 
-    case 'POST': // Thêm người dùng
+    case 'POST': // Thêm mới
         $data = json_decode(file_get_contents('php://input'), true);
+        if (!$data || empty($data['ma_so']) || empty($data['ho_ten']) || empty($data['email'])) {
+            response(['error' => 'Thiếu thông tin bắt buộc'], 400);
+        }
+
         $stmt = $pdo->prepare("INSERT INTO nguoi_dung (ma_so, ho_ten, email, vai_tro, khoa) VALUES (?, ?, ?, ?, ?)");
-        $stmt->execute([$data['ma_so'], $data['ho_ten'], $data['email'], $data['vai_tro'], $data['khoa']]);
-        echo json_encode(['message' => 'Thêm thành công', 'id' => $pdo->lastInsertId()]);
+        $stmt->execute([$data['ma_so'], $data['ho_ten'], $data['email'], $data['vai_tro'] ?? 'sinh_vien', $data['khoa'] ?? 'Công nghệ Thông tin']);
+        response(['message' => 'Thêm thành công', 'id' => $pdo->lastInsertId()], 201);
         break;
 
-    case 'PUT': // Sửa người dùng
+    case 'PUT': // Sửa
         $data = json_decode(file_get_contents('php://input'), true);
+        if (!$data || !isset($data['id'])) {
+            response(['error' => 'Thiếu ID'], 400);
+        }
+
         $stmt = $pdo->prepare("UPDATE nguoi_dung SET ma_so=?, ho_ten=?, email=?, vai_tro=?, khoa=? WHERE id=?");
         $stmt->execute([$data['ma_so'], $data['ho_ten'], $data['email'], $data['vai_tro'], $data['khoa'], $data['id']]);
-        echo json_encode(['message' => 'Cập nhật thành công']);
+        response(['message' => 'Cập nhật thành công']);
         break;
 
-    case 'DELETE': // Xóa người dùng
+    case 'DELETE': // Xóa
         $data = json_decode(file_get_contents('php://input'), true);
+        if (!$data || !isset($data['id'])) {
+            response(['error' => 'Thiếu ID'], 400);
+        }
+
         $stmt = $pdo->prepare("DELETE FROM nguoi_dung WHERE id = ?");
         $stmt->execute([$data['id']]);
-        echo json_encode(['message' => 'Xóa thành công']);
+        response(['message' => 'Xóa thành công']);
         break;
 
     default:
-        echo json_encode(['error' => 'Phương thức không hỗ trợ']);
+        response(['error' => 'Phương thức không hỗ trợ'], 405);
 }
 ?>
