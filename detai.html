@@ -6,8 +6,11 @@
     <title>Quản lý Đề tài</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/2.0.8/css/dataTables.bootstrap5.min.css">
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.datatables.net/2.0.8/js/dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/2.0.8/js/dataTables.bootstrap5.min.js"></script>
     <style>
         body { background: #f8f9fa; }
         .header { background: #0d6efd; color: white; padding: 15px; text-align: center; }
@@ -27,7 +30,7 @@
         </button>
     </div>
 
-    <table class="table table-bordered table-hover">
+    <table class="table table-bordered table-hover" id="tblDetai">
         <thead class="table-primary">
             <tr>
                 <th>Mã</th>
@@ -39,20 +42,7 @@
                 <th>Thao tác</th>
             </tr>
         </thead>
-        <tbody>
-            <tr data-id="1">
-                <td>DA2026-001</td>
-                <td>Xây dựng website quản lý đồ án SV</td>
-                <td>Công nghệ phần mềm</td>
-                <td>Nguyễn Thị Lan</td>
-                <td>2</td>
-                <td><span class="badge bg-success">Mở</span></td>
-                <td>
-                    <button class="btn btn-sm btn-warning btn-sua" data-bs-toggle="modal" data-bs-target="#modalDetai"><i class="bi bi-pencil"></i></button>
-                    <button class="btn btn-sm btn-danger btn-xoa"><i class="bi bi-trash"></i></button>
-                </td>
-            </tr>
-        </tbody>
+        <tbody></tbody>
     </table>
 </div>
 
@@ -105,7 +95,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-                <button type="button" class="btn btn-primary" id="btnLuu">Lưu</button>
+                <button type="button" class="btn btn-primary" id="btnLuuDetai">Lưu</button>
             </div>
         </div>
     </div>
@@ -113,31 +103,90 @@
 
 <script>
     $(document).ready(function () {
-        $('.btn-sua').click(function () {
-            let row = $(this).closest('tr');
-            $('#id').val(row.data('id'));
-            $('#ma_de_tai').val(row.find('td:eq(0)').text());
-            $('#ten_de_tai').val(row.find('td:eq(1)').text());
-            $('.modal-title').text('Sửa đề tài');
-        });
+        // Lấy danh sách đề tài từ API
+        $.ajax({
+            url: 'api/detai_api.php',
+            method: 'GET',
+            dataType: 'json',
+            success: function (data) {
+                let tbody = $('#tblDetai tbody');
+                tbody.empty();
+                data.forEach(dt => {
+                    let row = `
+                        <tr data-id="${dt.id}">
+                            <td>${dt.ma_de_tai}</td>
+                            <td>${dt.ten_de_tai}</td>
+                            <td>${dt.linh_vuc}</td>
+                            <td>${dt.giang_vien}</td>
+                            <td>${dt.so_luong_sv_toi_da}</td>
+                            <td><span class="badge bg-success">${dt.trang_thai}</span></td>
+                            <td>
+                                <button class="btn btn-sm btn-warning btn-sua" data-bs-toggle="modal" data-bs-target="#modalDetai"><i class="bi bi-pencil"></i></button>
+                                <button class="btn btn-sm btn-danger btn-xoa" onclick="xoaDeTai(${dt.id})"><i class="bi bi-trash"></i></button>
+                            </td>
+                        </tr>`;
+                    tbody.append(row);
+                });
 
-        $('.btn-xoa').click(function () {
-            if (confirm('Xóa đề tài?')) {
-                $(this).closest('tr').remove();
-                alert('Đã xóa (demo)');
+                // Khởi tạo DataTables
+                $('#tblDetai').DataTable({
+                    "language": { "url": "//cdn.datatables.net/plug-ins/2.0.8/i18n/vi.json" },
+                    "pageLength": 10,
+                    "lengthMenu": [5, 10, 25, 50, "Tất cả"],
+                    "searching": true,
+                    "paging": true,
+                    "ordering": true,
+                    "info": true
+                });
+            },
+            error: function () {
+                alert('Lỗi khi tải dữ liệu đề tài');
             }
         });
 
-        $('#btnLuu').click(function () {
-            alert('Đã lưu đề tài (demo frontend)');
-            $('#modalDetai').modal('hide');
-        });
-
-        $('#modalDetai').on('show.bs.modal', function (e) {
-            if (!$(e.relatedTarget).hasClass('btn-sua')) {
-                $('#formDetai')[0].reset();
-                $('.modal-title').text('Thêm đề tài mới');
+        // Xóa đề tài
+        window.xoaDeTai = function(id) {
+            if (confirm('Xóa đề tài này?')) {
+                $.ajax({
+                    url: 'api/detai_api.php',
+                    method: 'DELETE',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ id: id }),
+                    success: function () {
+                        alert('Xóa thành công');
+                        location.reload();
+                    },
+                    error: function () {
+                        alert('Lỗi khi xóa');
+                    }
+                });
             }
+        };
+
+        // Lưu thêm/sửa đề tài
+        $('#btnLuuDetai').click(function () {
+            let data = {
+                ma_de_tai: $('#ma_de_tai').val(),
+                ten_de_tai: $('#ten_de_tai').val(),
+                linh_vuc: $('#linh_vuc').val(),
+                giang_vien: $('#giang_vien').val(),
+                so_luong_sv_max: $('#so_luong_sv_max').val(),
+                trang_thai: $('#trang_thai').val()
+            };
+
+            $.ajax({
+                url: 'api/detai_api.php',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(data),
+                success: function (res) {
+                    alert(res.message);
+                    location.reload();
+                },
+                error: function () {
+                    alert('Lỗi khi lưu');
+                }
+            });
         });
     });
 </script>
