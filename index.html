@@ -9,64 +9,121 @@
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <style>
-        body { background: #f8f9fa; font-family: Arial, sans-serif; }
+        html, body {
+            height: 100%;
+            margin: 0;
+        }
+        body {
+            display: flex;
+            flex-direction: column;
+            background: #f8f9fa;
+            font-family: Arial, sans-serif;
+        }
         .header { background: #0d6efd; color: white; padding: 20px; text-align: center; }
         .card { box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        main { flex: 1 0 auto; }
+        footer { flex-shrink: 0; }
     </style>
 </head>
 <body>
 
+<!-- Header -->
 <div class="header">
     <h2>HỆ THỐNG QUẢN LÝ ĐỒ ÁN SINH VIÊN</h2>
     <p>Đợt HK2 2025-2026 - Khoa Công nghệ Thông tin</p>
 </div>
 
-<div class="container my-5">
-    <div class="row text-center mb-5">
-        <div class="col-md-3 mb-4">
-            <div class="card p-3">
-                <h5 class="text-primary">Đề tài mở</h5>
-                <h3 id="soDeTaiMo">0</h3>
+<!-- Navbar -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="index.html">QL Đồ Án SV</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item"><a class="nav-link" href="nguoidung.html">Người dùng</a></li>
+                <li class="nav-item"><a class="nav-link" href="detai.html">Đề tài</a></li>
+                <li class="nav-item"><a class="nav-link" href="dangky.html">Đăng ký</a></li>
+                <li class="nav-item"><a class="nav-link" href="tiendo.html">Tiến độ</a></li>
+                <li class="nav-item"><a class="nav-link" href="dotdoan.html">Đợt đồ án</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- Nội dung chính -->
+<main>
+    <div class="container my-5">
+        <div class="row text-center mb-5">
+            <div class="col-md-3 mb-4">
+                <div class="card p-3">
+                    <h5 class="text-primary">Đề tài mở</h5>
+                    <h3 id="soDeTaiMo">0</h3>
+                </div>
+            </div>
+            <div class="col-md-3 mb-4">
+                <div class="card p-3">
+                    <h5 class="text-primary">Đăng ký chờ duyệt</h5>
+                    <h3 id="choDuyet">0</h3>
+                </div>
+            </div>
+            <div class="col-md-3 mb-4">
+                <div class="card p-3">
+                    <h5 class="text-primary">Tiến độ TB</h5>
+                    <h3 id="tienDoTB">0%</h3>
+                </div>
+            </div>
+            <div class="col-md-3 mb-4">
+                <div class="card p-3">
+                    <h5 class="text-primary">Người dùng</h5>
+                    <h3 id="soNguoiDung">0</h3>
+                </div>
             </div>
         </div>
-        <div class="col-md-3 mb-4">
-            <div class="card p-3">
-                <h5 class="text-primary">Đăng ký chờ duyệt</h5>
-                <h3 id="choDuyet">0</h3>
+
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Chào mừng bạn đến với hệ thống</h5>
             </div>
-        </div>
-        <div class="col-md-3 mb-4">
-            <div class="card p-3">
-                <h5 class="text-primary">Tiến độ TB</h5>
-                <h3 id="tienDoTB">0%</h3>
+            <div class="card-body">
+                <p>Chọn chức năng từ menu bên trên hoặc các nút nhanh để quản lý.</p>
             </div>
-        </div>
-        <div class="col-md-3 mb-4">
-            <div class="card p-3">
-                <h5 class="text-primary">Người dùng</h5>
-                <h3 id="soNguoiDung">0</h3>
+            <div class="card-footer text-end">
+                <a href="nguoidung.html" class="btn btn-success">Quản lý người dùng</a>
+                <a href="detai.html" class="btn btn-primary">Quản lý đề tài</a>
+                <a href="dangky.html" class="btn btn-info">Quản lý đăng ký</a>
             </div>
         </div>
     </div>
+</main>
 
-    <div class="card">
-        <div class="card-header bg-primary text-white">
-            <h5 class="mb-0">Chào mừng bạn đến với hệ thống</h5>
-        </div>
-        <div class="card-body">
-            <p>Chọn chức năng từ menu bên trên hoặc các nút nhanh để quản lý.</p>
-        </div>
-        <div class="card-footer text-end">
-            <a href="nguoidung.html" class="btn btn-success">Quản lý người dùng</a>
-            <a href="detai.html" class="btn btn-primary">Quản lý đề tài</a>
-            <a href="dangky.html" class="btn btn-info">Quản lý đăng ký</a>
-        </div>
-    </div>
-</div>
-
-<footer class="bg-dark text-white text-center py-3">
+<footer class="bg-dark text-white text-center py-3 mt-auto">
     <p>© 2026 - Hệ thống Quản lý Đồ án Sinh viên</p>
 </footer>
+
+<script>
+$(document).ready(function () {
+    // Load thống kê động từ API
+    $.ajax({
+        url: 'api/thongke.php',
+        method: 'GET',
+        dataType: 'json',
+        success: function (data) {
+            console.log('Thống kê từ API:', data); // Debug: mở F12 → Console
+
+            $('#soDeTaiMo').text(data.de_tai_mo || 0);
+            $('#choDuyet').text(data.cho_duyet || 0);
+            $('#tienDoTB').text((data.tien_do_tb || 0) + '%');
+            $('#soNguoiDung').text(data.so_nguoi_dung || 0);
+        },
+        error: function (xhr, status, error) {
+            console.error('Lỗi load thống kê:', status, error, xhr.responseText);
+            alert('Không load được thống kê. Kiểm tra console (F12).');
+        }
+    });
+});
+</script>
 
 </body>
 </html>

@@ -25,7 +25,7 @@
 
 <div class="container my-5">
     <div class="mb-3 text-end">
-        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalDetai">
+        <button class="btn btn-success" id="btnThemMoi">
             <i class="bi bi-plus-lg"></i> Thêm đề tài
         </button>
     </div>
@@ -51,7 +51,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Thêm / Sửa đề tài</h5>
+                <h5 class="modal-title" id="modalTitle">Thêm đề tài</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
@@ -67,25 +67,29 @@
                     </div>
                     <div class="mb-3">
                         <label>Lĩnh vực</label>
-                        <select class="form-select" id="linh_vuc">
+                        <select class="form-select" id="linh_vuc" required>
+                            <option value="">Chọn lĩnh vực</option>
                             <option value="1">Công nghệ phần mềm</option>
                             <option value="2">Trí tuệ nhân tạo</option>
+                            <!-- Thêm các lĩnh vực khác nếu có -->
                         </select>
                     </div>
                     <div class="mb-3">
                         <label>GV hướng dẫn</label>
-                        <select class="form-select" id="giang_vien">
+                        <select class="form-select" id="giang_vien" required>
+                            <option value="">Chọn giảng viên</option>
                             <option value="2">Nguyễn Thị Lan</option>
                             <option value="3">Trần Văn Hùng</option>
+                            <!-- Thêm giảng viên khác nếu cần -->
                         </select>
                     </div>
                     <div class="mb-3">
                         <label>Số SV tối đa</label>
-                        <input type="number" class="form-control" id="so_luong_sv_max" min="1" value="1">
+                        <input type="number" class="form-control" id="so_luong_sv_max" min="1" value="1" required>
                     </div>
                     <div class="mb-3">
                         <label>Trạng thái</label>
-                        <select class="form-select" id="trang_thai">
+                        <select class="form-select" id="trang_thai" required>
                             <option value="mo">Mở</option>
                             <option value="dong">Đóng</option>
                             <option value="da_hoan_thanh">Hoàn thành</option>
@@ -102,93 +106,145 @@
 </div>
 
 <script>
-    $(document).ready(function () {
-        // Lấy danh sách đề tài từ API
+$(document).ready(function () {
+    let table = $('#tblDetai').DataTable({
+        "pageLength": 10,
+        "lengthMenu": [5, 10, 25, 50, "Tất cả"],
+        "searching": true,
+        "paging": true,
+        "ordering": true,
+        "info": true,
+        "destroy": true  // Cho phép khởi tạo lại nếu cần
+    });
+
+    // Hàm load dữ liệu từ API
+    function loadDeTai() {
         $.ajax({
             url: 'api/detai_api.php',
             method: 'GET',
             dataType: 'json',
             success: function (data) {
-                let tbody = $('#tblDetai tbody');
-                tbody.empty();
-                data.forEach(dt => {
-                    let row = `
-                        <tr data-id="${dt.id}">
-                            <td>${dt.ma_de_tai}</td>
-                            <td>${dt.ten_de_tai}</td>
-                            <td>${dt.linh_vuc}</td>
-                            <td>${dt.giang_vien}</td>
-                            <td>${dt.so_luong_sv_toi_da}</td>
-                            <td><span class="badge bg-success">${dt.trang_thai}</span></td>
-                            <td>
-                                <button class="btn btn-sm btn-warning btn-sua" data-bs-toggle="modal" data-bs-target="#modalDetai"><i class="bi bi-pencil"></i></button>
-                                <button class="btn btn-sm btn-danger btn-xoa" onclick="xoaDeTai(${dt.id})"><i class="bi bi-trash"></i></button>
-                            </td>
-                        </tr>`;
-                    tbody.append(row);
-                });
+                console.log('Dữ liệu đề tài từ API:', data); // Debug: mở F12 → Console xem dữ liệu có về không
 
-                // Khởi tạo DataTables
-                $('#tblDetai').DataTable({
-                    "language": { "url": "//cdn.datatables.net/plug-ins/2.0.8/i18n/vi.json" },
-                    "pageLength": 10,
-                    "lengthMenu": [5, 10, 25, 50, "Tất cả"],
-                    "searching": true,
-                    "paging": true,
-                    "ordering": true,
-                    "info": true
+                table.clear().draw();
+
+                if (!data || data.length === 0) {
+                    table.row.add(['', '<i>Chưa có đề tài nào</i>', '', '', '', '', '']).draw();
+                    return;
+                }
+
+                data.forEach(dt => {
+                    let trangThaiBadge = '';
+                    switch (dt.trang_thai) {
+                        case 'mo': trangThaiBadge = 'bg-success'; break;
+                        case 'dong': trangThaiBadge = 'bg-warning'; break;
+                        case 'da_hoan_thanh': trangThaiBadge = 'bg-secondary'; break;
+                        default: trangThaiBadge = 'bg-secondary';
+                    }
+
+                    table.row.add([
+                        dt.ma_de_tai,
+                        dt.ten_de_tai,
+                        dt.linh_vuc || '-',
+                        dt.giang_vien || '-',
+                        dt.so_luong_sv_toi_da || '1',
+                        `<span class="badge ${trangThaiBadge}">${dt.trang_thai}</span>`,
+                        `<button class="btn btn-sm btn-warning btn-sua"><i class="bi bi-pencil"></i></button>
+                         <button class="btn btn-sm btn-danger btn-xoa" data-id="${dt.id}"><i class="bi bi-trash"></i></button>`
+                    ]).draw();
                 });
             },
-            error: function () {
-                alert('Lỗi khi tải dữ liệu đề tài');
+            error: function (xhr, status, error) {
+                console.error('Lỗi gọi API đề tài:', status, error, xhr.responseText);
+                alert('Không load được dữ liệu đề tài. Kiểm tra console (F12).');
             }
         });
+    }
 
-        // Xóa đề tài
-        window.xoaDeTai = function(id) {
-            if (confirm('Xóa đề tài này?')) {
-                $.ajax({
-                    url: 'api/detai_api.php',
-                    method: 'DELETE',
-                    contentType: 'application/json',
-                    data: JSON.stringify({ id: id }),
-                    success: function () {
-                        alert('Xóa thành công');
-                        location.reload();
-                    },
-                    error: function () {
-                        alert('Lỗi khi xóa');
-                    }
-                });
-            }
-        };
+    // Load dữ liệu lần đầu
+    loadDeTai();
 
-        // Lưu thêm/sửa đề tài
-        $('#btnLuuDetai').click(function () {
-            let data = {
-                ma_de_tai: $('#ma_de_tai').val(),
-                ten_de_tai: $('#ten_de_tai').val(),
-                linh_vuc: $('#linh_vuc').val(),
-                giang_vien: $('#giang_vien').val(),
-                so_luong_sv_max: $('#so_luong_sv_max').val(),
-                trang_thai: $('#trang_thai').val()
-            };
+    // Event nút Sửa
+    $('#tblDetai tbody').on('click', '.btn-sua', function () {
+        let row = $(this).closest('tr');
+        let id = row.find('.btn-xoa').data('id');
+        let cells = row.find('td');
 
+        $('#id').val(id);
+        $('#ma_de_tai').val(cells.eq(0).text());
+        $('#ten_de_tai').val(cells.eq(1).text());
+        $('#linh_vuc').val(cells.eq(2).text()); // Nếu có select value
+        $('#giang_vien').val(cells.eq(3).text()); // Nếu có select value
+        $('#so_luong_sv_max').val(cells.eq(4).text());
+        $('#trang_thai').val(cells.eq(5).text().match(/>([^<]+)</)[1]);
+
+        $('#modalTitle').text('Sửa đề tài');
+        $('#modalDetai').modal('show');
+    });
+
+    // Event nút Thêm mới
+    $('#btnThemMoi').click(function () {
+        $('#formDetai')[0].reset();
+        $('#id').val('');
+        $('#so_luong_sv_max').val('1');
+        $('#modalTitle').text('Thêm đề tài');
+        $('#modalDetai').modal('show');
+    });
+
+    // Event nút Xóa
+    $('#tblDetai tbody').on('click', '.btn-xoa', function () {
+        let id = $(this).data('id');
+        if (confirm('Xóa đề tài này?')) {
             $.ajax({
                 url: 'api/detai_api.php',
-                method: 'POST',
+                method: 'DELETE',
                 contentType: 'application/json',
-                data: JSON.stringify(data),
-                success: function (res) {
-                    alert(res.message);
-                    location.reload();
+                data: JSON.stringify({ id: id }),
+                success: function () {
+                    alert('Xóa thành công');
+                    loadDeTai(); // Reload bảng
                 },
-                error: function () {
-                    alert('Lỗi khi lưu');
+                error: function (xhr) {
+                    console.log(xhr.responseText);
+                    alert('Lỗi khi xóa: ' + (xhr.responseJSON?.error || 'Không rõ'));
                 }
             });
+        }
+    });
+
+    // Lưu (Thêm hoặc Sửa)
+    $('#btnLuuDetai').click(function () {
+        let id = $('#id').val();
+        let url = 'api/detai_api.php';
+        let method = id ? 'PUT' : 'POST';
+
+        let data = {
+            id: id || undefined,
+            ma_de_tai: $('#ma_de_tai').val(),
+            ten_de_tai: $('#ten_de_tai').val(),
+            linh_vuc: $('#linh_vuc').val(),
+            giang_vien: $('#giang_vien').val(),
+            so_luong_sv_max: $('#so_luong_sv_max').val(),
+            trang_thai: $('#trang_thai').val()
+        };
+
+        $.ajax({
+            url: url,
+            method: method,
+            contentType: 'application/json',
+            data: JSON.stringify(data),
+            success: function (res) {
+                alert(res.message || 'Lưu thành công');
+                $('#modalDetai').modal('hide');
+                loadDeTai(); // Reload bảng
+            },
+            error: function (xhr) {
+                console.log(xhr.responseText);
+                alert('Lỗi khi lưu: ' + (xhr.responseJSON?.error || 'Không rõ'));
+            }
         });
     });
+});
 </script>
 
 </body>

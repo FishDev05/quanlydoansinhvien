@@ -25,7 +25,7 @@
 
 <div class="container my-5">
     <div class="mb-3 text-end">
-        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalNguoiDung">
+        <button class="btn btn-success" id="btnThemMoi">
             <i class="bi bi-plus-lg"></i> Thêm người dùng
         </button>
     </div>
@@ -50,7 +50,7 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Thêm / Sửa người dùng</h5>
+                <h5 class="modal-title" id="modalTitle">Thêm người dùng</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
@@ -70,7 +70,7 @@
                     </div>
                     <div class="mb-3">
                         <label>Vai trò</label>
-                        <select class="form-select" id="vai_tro">
+                        <select class="form-select" id="vai_tro" required>
                             <option value="sinh_vien">Sinh viên</option>
                             <option value="giang_vien">Giảng viên</option>
                             <option value="admin">Admin</option>
@@ -91,91 +91,142 @@
 </div>
 
 <script>
-    $(document).ready(function () {
-        // Lấy danh sách người dùng từ API
+$(document).ready(function () {
+    let table = $('#tblNguoiDung').DataTable({
+        "pageLength": 10,
+        "lengthMenu": [5, 10, 25, 50, "Tất cả"],
+        "searching": true,
+        "paging": true,
+        "ordering": true,
+        "info": true,
+        "destroy": true  // Cho phép khởi tạo lại nếu cần
+    });
+
+    // Hàm load dữ liệu từ API
+    function loadNguoiDung() {
         $.ajax({
             url: 'api/nguoidung_api.php',
             method: 'GET',
             dataType: 'json',
             success: function (data) {
-                let tbody = $('#tblNguoiDung tbody');
-                tbody.empty();
-                data.forEach(user => {
-                    let row = `
-                        <tr data-id="${user.id}">
-                            <td>${user.ma_so}</td>
-                            <td>${user.ho_ten}</td>
-                            <td>${user.email}</td>
-                            <td><span class="badge bg-info">${user.vai_tro}</span></td>
-                            <td>${user.khoa}</td>
-                            <td>
-                                <button class="btn btn-sm btn-warning btn-sua" data-bs-toggle="modal" data-bs-target="#modalNguoiDung"><i class="bi bi-pencil"></i></button>
-                                <button class="btn btn-sm btn-danger btn-xoa" onclick="xoaNguoiDung(${user.id})"><i class="bi bi-trash"></i></button>
-                            </td>
-                        </tr>`;
-                    tbody.append(row);
-                });
+                console.log('Dữ liệu người dùng từ API:', data); // Debug: mở F12 → Console xem dữ liệu có về không
 
-                // Khởi tạo DataTables
-                $('#tblNguoiDung').DataTable({
-                    "language": { "url": "//cdn.datatables.net/plug-ins/2.0.8/i18n/vi.json" },
-                    "pageLength": 10,
-                    "lengthMenu": [5, 10, 25, 50, "Tất cả"],
-                    "searching": true,
-                    "paging": true,
-                    "ordering": true,
-                    "info": true
+                table.clear().draw();
+
+                if (!data || data.length === 0) {
+                    table.row.add(['', '<i>Chưa có người dùng nào</i>', '', '', '', '']).draw();
+                    return;
+                }
+
+                data.forEach(user => {
+                    let vaiTroBadge = '';
+                    switch (user.vai_tro) {
+                        case 'sinh_vien': vaiTroBadge = 'bg-success'; break;
+                        case 'giang_vien': vaiTroBadge = 'bg-info'; break;
+                        case 'admin': vaiTroBadge = 'bg-danger'; break;
+                        default: vaiTroBadge = 'bg-secondary';
+                    }
+
+                    table.row.add([
+                        user.ma_so,
+                        user.ho_ten,
+                        user.email,
+                        `<span class="badge ${vaiTroBadge}">${user.vai_tro}</span>`,
+                        user.khoa || '-',
+                        `<button class="btn btn-sm btn-warning btn-sua"><i class="bi bi-pencil"></i></button>
+                         <button class="btn btn-sm btn-danger btn-xoa" data-id="${user.id}"><i class="bi bi-trash"></i></button>`
+                    ]).draw();
                 });
             },
-            error: function () {
-                alert('Lỗi khi tải dữ liệu người dùng');
+            error: function (xhr, status, error) {
+                console.error('Lỗi gọi API người dùng:', status, error, xhr.responseText);
+                alert('Không load được dữ liệu người dùng. Kiểm tra console (F12).');
             }
         });
+    }
 
-        // Xóa người dùng
-        window.xoaNguoiDung = function(id) {
-            if (confirm('Xóa người dùng này?')) {
-                $.ajax({
-                    url: 'api/nguoidung_api.php',
-                    method: 'DELETE',
-                    contentType: 'application/json',
-                    data: JSON.stringify({ id: id }),
-                    success: function () {
-                        alert('Xóa thành công');
-                        location.reload();
-                    },
-                    error: function () {
-                        alert('Lỗi khi xóa');
-                    }
-                });
-            }
-        };
+    // Load dữ liệu lần đầu
+    loadNguoiDung();
 
-        // Lưu thêm/sửa người dùng
-        $('#btnLuuNguoiDung').click(function () {
-            let data = {
-                ma_so: $('#ma_so').val(),
-                ho_ten: $('#ho_ten').val(),
-                email: $('#email').val(),
-                vai_tro: $('#vai_tro').val(),
-                khoa: $('#khoa').val()
-            };
+    // Event nút Sửa
+    $('#tblNguoiDung tbody').on('click', '.btn-sua', function () {
+        let row = $(this).closest('tr');
+        let id = row.find('.btn-xoa').data('id');
+        let cells = row.find('td');
 
+        $('#id').val(id);
+        $('#ma_so').val(cells.eq(0).text());
+        $('#ho_ten').val(cells.eq(1).text());
+        $('#email').val(cells.eq(2).text());
+        $('#vai_tro').val(cells.eq(3).text().match(/>([^<]+)</)[1]); // Lấy text vai trò
+        $('#khoa').val(cells.eq(4).text() === '-' ? 'Công nghệ Thông tin' : cells.eq(4).text());
+
+        $('#modalTitle').text('Sửa người dùng');
+        $('#modalNguoiDung').modal('show');
+    });
+
+    // Event nút Thêm mới
+    $('#btnThemMoi').click(function () {
+        $('#formNguoiDung')[0].reset();
+        $('#id').val('');
+        $('#khoa').val('Công nghệ Thông tin');
+        $('#modalTitle').text('Thêm người dùng');
+        $('#modalNguoiDung').modal('show');
+    });
+
+    // Event nút Xóa
+    $('#tblNguoiDung tbody').on('click', '.btn-xoa', function () {
+        let id = $(this).data('id');
+        if (confirm('Xóa người dùng này?')) {
             $.ajax({
                 url: 'api/nguoidung_api.php',
-                method: 'POST',
+                method: 'DELETE',
                 contentType: 'application/json',
-                data: JSON.stringify(data),
-                success: function (res) {
-                    alert(res.message);
-                    location.reload();
+                data: JSON.stringify({ id: id }),
+                success: function () {
+                    alert('Xóa thành công');
+                    loadNguoiDung(); // Reload bảng
                 },
-                error: function () {
-                    alert('Lỗi khi lưu');
+                error: function (xhr) {
+                    console.log(xhr.responseText);
+                    alert('Lỗi khi xóa: ' + (xhr.responseJSON?.error || 'Không rõ'));
                 }
             });
+        }
+    });
+
+    // Lưu (Thêm hoặc Sửa)
+    $('#btnLuuNguoiDung').click(function () {
+        let id = $('#id').val();
+        let url = 'api/nguoidung_api.php';
+        let method = id ? 'PUT' : 'POST';
+
+        let data = {
+            id: id || undefined,
+            ma_so: $('#ma_so').val(),
+            ho_ten: $('#ho_ten').val(),
+            email: $('#email').val(),
+            vai_tro: $('#vai_tro').val(),
+            khoa: $('#khoa').val()
+        };
+
+        $.ajax({
+            url: url,
+            method: method,
+            contentType: 'application/json',
+            data: JSON.stringify(data),
+            success: function (res) {
+                alert(res.message || 'Lưu thành công');
+                $('#modalNguoiDung').modal('hide');
+                loadNguoiDung(); // Reload bảng
+            },
+            error: function (xhr) {
+                console.log(xhr.responseText);
+                alert('Lỗi khi lưu: ' + (xhr.responseJSON?.error || 'Không rõ'));
+            }
         });
     });
+});
 </script>
 
 </body>

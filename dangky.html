@@ -25,7 +25,7 @@
 
 <div class="container my-5">
     <div class="mb-3 text-end">
-        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalDangKy">
+        <button class="btn btn-success" id="btnThemMoi">
             <i class="bi bi-plus-lg"></i> Thêm đăng ký mới
         </button>
     </div>
@@ -42,18 +42,16 @@
                 <th>Thao tác</th>
             </tr>
         </thead>
-        <tbody>
-            <!-- Dữ liệu sẽ được load từ API sau -->
-        </tbody>
+        <tbody></tbody>
     </table>
 </div>
 
-<!-- Modal Thêm/Sửa đăng ký -->
+<!-- Modal Thêm/Sửa -->
 <div class="modal fade" id="modalDangKy" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Thêm / Sửa đăng ký đề tài</h5>
+                <h5 class="modal-title" id="modalTitle">Thêm đăng ký mới</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
@@ -61,7 +59,7 @@
                     <input type="hidden" id="id">
                     <div class="mb-3">
                         <label>Mã đăng ký</label>
-                        <input type="text" class="form-control" id="ma_dk" required>
+                        <input type="text" class="form-control" id="ma_dk" readonly placeholder="Tự sinh">
                     </div>
                     <div class="mb-3">
                         <label>Sinh viên (Mã số)</label>
@@ -77,7 +75,8 @@
                     </div>
                     <div class="mb-3">
                         <label>Trạng thái</label>
-                        <select class="form-select" id="trang_thai">
+                        <select class="form-select" id="trang_thai" required>
+                            <option value="">Chọn trạng thái</option>
                             <option value="cho_duyet">Chờ duyệt</option>
                             <option value="da_duyet">Đã duyệt</option>
                             <option value="tu_choi">Từ chối</option>
@@ -98,53 +97,144 @@
 </div>
 
 <script>
-    $(document).ready(function () {
-        // Khởi tạo DataTables
-        $('#tblDangKy').DataTable({
-            "language": { "url": "//cdn.datatables.net/plug-ins/2.0.8/i18n/vi.json" },
-            "pageLength": 10,
-            "lengthMenu": [5, 10, 25, 50, "Tất cả"],
-            "searching": true,
-            "paging": true,
-            "ordering": true,
-            "info": true
-        });
+$(document).ready(function () {
+    let table = $('#tblDangKy').DataTable({
+        "pageLength": 10,
+        "lengthMenu": [5, 10, 25, 50, "Tất cả"],
+        "searching": true,
+        "paging": true,
+        "ordering": true,
+        "info": true,
+        "destroy": true // Cho phép khởi tạo lại nếu cần
+    });
 
-        // Sửa đăng ký
-        $('.btn-sua').click(function () {
-            let row = $(this).closest('tr');
-            $('#id').val(row.data('id'));
-            $('#ma_dk').val(row.find('td:eq(0)').text());
-            $('#sinh_vien').val(row.find('td:eq(1)').text());
-            $('#ma_de_tai').val(row.find('td:eq(2)').text());
-            $('#ngay_dk').val(row.find('td:eq(3)').text());
-            $('#trang_thai').val(row.find('td:eq(4)').text().includes('Đã duyệt') ? 'da_duyet' : 'cho_duyet');
-            $('#ghi_chu').val(row.find('td:eq(5)').text());
-            $('.modal-title').text('Sửa đăng ký');
-        });
+    // Hàm load dữ liệu từ API
+    function loadDangKy() {
+        $.ajax({
+            url: 'api/dangky_api.php',
+            method: 'GET',
+            dataType: 'json',
+            success: function (data) {
+                console.log('Dữ liệu từ API đăng ký:', data); // Debug: mở F12 → Console xem dữ liệu có về không
 
-        // Xóa đăng ký (demo)
-        $('.btn-xoa').click(function () {
-            if (confirm('Xóa đăng ký này?')) {
-                $(this).closest('tr').remove();
-                alert('Đã xóa (demo frontend)');
+                table.clear().draw();
+
+                if (!data || data.length === 0) {
+                    table.row.add(['', '<i>Chưa có đăng ký nào</i>', '', '', '', '', '']).draw();
+                    return;
+                }
+
+                data.forEach(item => {
+                    let trangThaiBadge = '';
+                    switch (item.trang_thai) {
+                        case 'da_duyet': trangThaiBadge = 'bg-success'; break;
+                        case 'cho_duyet': trangThaiBadge = 'bg-warning'; break;
+                        case 'tu_choi': trangThaiBadge = 'bg-danger'; break;
+                        default: trangThaiBadge = 'bg-secondary';
+                    }
+
+                    table.row.add([
+                        item.id,
+                        item.sinh_vien_id, // Sau này join để hiển thị tên SV
+                        item.de_tai_id,     // Sau này join để hiển thị tên đề tài
+                        item.ngay_dang_ky || '-',
+                        `<span class="badge ${trangThaiBadge}">${item.trang_thai}</span>`,
+                        item.ghi_chu || '-',
+                        `<button class="btn btn-sm btn-warning btn-sua"><i class="bi bi-pencil"></i></button>
+                         <button class="btn btn-sm btn-danger btn-xoa" data-id="${item.id}"><i class="bi bi-trash"></i></button>`
+                    ]).draw();
+                });
+            },
+            error: function (xhr, status, error) {
+                console.error('Lỗi gọi API đăng ký:', status, error, xhr.responseText);
+                alert('Không load được dữ liệu đăng ký. Kiểm tra console (F12) và API.');
             }
         });
+    }
 
-        // Lưu (Thêm/Sửa) - demo alert
-        $('#btnLuuDangKy').click(function () {
-            alert('Đã lưu đăng ký đề tài (demo frontend)');
-            $('#modalDangKy').modal('hide');
-        });
+    // Load dữ liệu lần đầu
+    loadDangKy();
 
-        // Reset modal khi thêm mới
-        $('#modalDangKy').on('show.bs.modal', function (e) {
-            if (!$(e.relatedTarget).hasClass('btn-sua')) {
-                $('#formDangKy')[0].reset();
-                $('.modal-title').text('Thêm đăng ký mới');
+    // Event nút Sửa
+    $('#tblDangKy tbody').on('click', '.btn-sua', function () {
+        let row = $(this).closest('tr');
+        let id = row.find('.btn-xoa').data('id');
+
+        let cells = row.find('td');
+        $('#id').val(id);
+        $('#ma_dk').val(cells.eq(0).text());
+        $('#sinh_vien').val(cells.eq(1).text());
+        $('#ma_de_tai').val(cells.eq(2).text());
+        $('#ngay_dk').val(cells.eq(3).text());
+        $('#trang_thai').val(cells.eq(4).text().match(/>([^<]+)</)[1]); // Lấy text trạng thái
+        $('#ghi_chu').val(cells.eq(5).text() === '-' ? '' : cells.eq(5).text());
+
+        $('#modalTitle').text('Sửa đăng ký');
+        $('#modalDangKy').modal('show');
+    });
+
+    // Event nút Thêm mới
+    $('#btnThemMoi').click(function () {
+        $('#formDangKy')[0].reset();
+        $('#id').val('');
+        $('#ma_dk').val('Tự sinh');
+        $('#modalTitle').text('Thêm đăng ký mới');
+        $('#modalDangKy').modal('show');
+    });
+
+    // Event nút Xóa
+    $('#tblDangKy tbody').on('click', '.btn-xoa', function () {
+        let id = $(this).data('id');
+        if (confirm('Bạn chắc chắn muốn xóa đăng ký này?')) {
+            $.ajax({
+                url: 'api/dangky_api.php',
+                method: 'DELETE',
+                contentType: 'application/json',
+                data: JSON.stringify({ id: id }),
+                success: function () {
+                    alert('Xóa thành công');
+                    loadDangKy(); // Reload bảng
+                },
+                error: function (xhr) {
+                    console.log(xhr.responseText);
+                    alert('Lỗi khi xóa: ' + (xhr.responseJSON?.error || 'Không rõ'));
+                }
+            });
+        }
+    });
+
+    // Lưu (Thêm hoặc Sửa)
+    $('#btnLuuDangKy').click(function () {
+        let id = $('#id').val();
+        let url = 'api/dangky_api.php';
+        let method = id ? 'PUT' : 'POST';
+
+        let data = {
+            id: id || undefined,
+            de_tai_id: $('#ma_de_tai').val(),
+            sinh_vien_id: $('#sinh_vien').val(),
+            dot_do_an_id: 1, // ← Thay bằng giá trị thật (thêm select dot_do_an nếu cần)
+            trang_thai: $('#trang_thai').val(),
+            ghi_chu: $('#ghi_chu').val()
+        };
+
+        $.ajax({
+            url: url,
+            method: method,
+            contentType: 'application/json',
+            data: JSON.stringify(data),
+            success: function (res) {
+                alert(res.message || 'Lưu thành công');
+                $('#modalDangKy').modal('hide');
+                loadDangKy(); // Reload bảng
+            },
+            error: function (xhr) {
+                console.log(xhr.responseText);
+                alert('Lỗi khi lưu: ' + (xhr.responseJSON?.error || 'Không rõ'));
             }
         });
     });
+});
 </script>
 
 </body>
